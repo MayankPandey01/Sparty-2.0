@@ -166,9 +166,6 @@ def dump_credentials(dest):
 
         print("")
 
-        
-
-
 def fingerprint_frontpage(name):
         print("")
         enum_nix = ['_vti_bin/_vti_aut/author.exe','_vti_bin/_vti_adm/admin.exe','_vti_bin/shtml.exe']
@@ -337,11 +334,6 @@ def frontpage_rpc_check(name):
                 print (f"{RED}[-] Server responds with bad status {RESET}")
                 pass
 
-       
-
-
-
-
 def frontpage_service_listing(name):
         print("")
         headers = {
@@ -388,11 +380,6 @@ def frontpage_service_listing(name):
                 print (f"{RED}[-] Server responds with bad status {RESET}")
                 pass
         
-
-
-
-
-
 def frontpage_config_check(name):
         print("")
         headers = {
@@ -608,11 +595,6 @@ def main():
 	    if args.exploitation == False and args.enumeration == False:
 	    	print (f"{RED}  [!!] No Module Used  {RESET}")
 	    	print (f"{RED}  [!!] Use Exploitation or Enumeration  {RESET}")
-	    	
-
-	    
-	    
-	    
 	    
 	except KeyboardInterrupt:
 	    print (f"{RED} Keyboard Interrupt Detected {RESET}")
@@ -621,27 +603,10 @@ def main():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
 
 	try:
-
 		main()
-
 	except KeyboardInterrupt:
 	    print (f"{RED} Keyboard Interrupt Detected {RESET}")
 	    sys.exit(0)
