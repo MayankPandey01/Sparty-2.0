@@ -27,23 +27,25 @@ Installation on Linux.
 This Tool uses 2 modules to Audit  SharePoint, `Exploitation  ` and `Enumeration`
 You can use one or both of them at once. `python Sparty-2.0 -u https://example.com -enum -exploit `
 
-- Enumeration Module
-> Frontpage RPC Check
-> Frontpage Service Listing
->Frontpage Config Check
->Fingerprint Frontpage
->Checks Fpr Exposed Services in the Frontpage/Sharepoint  Directory
->Sharepoint and Frontpage Version Detection!
->Exposed Directory Check!
->Installed File and Access Rights Check!
-> RPC Service Querying!
-> File Enumeration!
+> Enumeration Module
 
-- Exploitation Module
-> Dumps Sharepoint Headers
-> Dumps Password Files
-> Checks For FIle Upload
-> Remove Frontpage Folder
+- Frontpage RPC Check
+- Frontpage Service Listing
+- Frontpage Config Check
+- Fingerprint Frontpage
+- Checks Fpr Exposed Services in the Frontpage/Sharepoint  Directory
+- Sharepoint and Frontpage Version Detection!
+- Exposed Directory Check!
+- Installed File and Access Rights Check!
+- RPC Service Querying!
+- File Enumeration!
+
+> Exploitation Module
+
+- Dumps Sharepoint Headers
+- Dumps Password Files
+- Checks For FIle Upload
+- Remove Frontpage Folder
 
 
 ## Please take this into consideration
