@@ -62,6 +62,8 @@ url           | url           | A URL to scan
 -enum            | Enumeration| Uses Enumeration Module
 -exploit            | Exploitation  | Uses Exploitation Module
 -h            | --help        | Displays help 
+-p           | --proxy        | Specify a proxy (ex: http://localhost:8080) 
+-hds            | --headers        | Specify a custom header (ex: 'Authorization=Basic: YOURTOKEN')
 
 
 ### Note
